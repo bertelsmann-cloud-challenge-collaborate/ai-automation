@@ -1,0 +1,58 @@
+service: website
+provider:
+  name: aws
+  runtime: python3
+plugins:
+  - serverless-offline
+  - serverless-s3-local
+custom:
+  serverless-offline:
+    resourceRoutes: true
+  s3:
+    port: 8000
+    directory: .
+resources:
+  Resources:
+    NewResource:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: local-bucket
+        WebsiteConfiguration:
+          IndexDocument: index.html
+    ProxyResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId:
+          Fn::GetAtt:
+            - ApiGatewayRestApi
+            - RootResourceId
+        PathPart: getSentiment
+        RestApiId:
+          Ref: ApiGatewayRestApi
+    ProxyMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId:
+          Ref: ProxyResource
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        HttpMethod: POST
+        MethodResponses:
+          - StatusCode: 200
+        Integration:
+          IntegrationHttpMethod: POST
+          Type: HTTP_PROXY
+          Uri: http://localhost:5000
+          IntegrationResponses:
+            - StatusCode: 200
+functions:
+  webhook:
+    handler: handler.webhook
+    events:
+      - http:
+        method: GET
+  s3hook:
+    handler: handler.s3hook
+    events:
+      - s3: local-bucket
+        event: s3:*
