@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<!-- Add Bootstrap and Bootstrap-Vue CSS to the <head> section -->
+	<link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap/dist/css/bootstrap.min.css"/>
+	<link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css"/>
+	<!-- Load polyfills to support older browsers -->
+	<script src="https://unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
+
+	<script	src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+
+</head>
+<body>
+	<div id = "app">
+	  	<div style="font-family: Arial, Geneva, Helvetica, sans-serif;">
+	  		<b-container fluid>
+	  			<b-form v-if="show">
+		  			<b-form-group id="input-group-1" label="Input sentence" label-for="review">
+		  				<b-form-textarea id="review" v-model="text" row="4"></b-form-textarea>
+		  			</b-form-group>
+	  				<b-button type="button" @click="onSubmit($event)" variant="primary">Submit</b-button>
+	  			</b-form>
+	  		</b-container>
+	  	</div>
+
+		<hr>
+
+	  	<div v-if="seen">
+	  		<b-container fluid>
+	  			<p>Sentiment classified as: {{sentiment}}</p>
+	  		</b-container>
+
+	  		<hr>
+	  		<b-container fluid>
+	  			<b-row align-h="between">
+	  				<b-col cols="2">
+	  					<b-card bg-variant="info" text-variant="white" title="Acceptance">
+	  						<b-card-text>Click Approve to accept classification result.</b-card-text>
+	  						<b-button variant="success" v-on:click="approve">Approve</b-button>
+	  					</b-card>
+	  				</b-col>
+	  				<b-col cols="10">
+	  					<b-card bg-variant="dark" text-variant="white" title="Reclassification">
+	  						<b-card-text>Click a choice below to revise classification result.</b-card-text>
+	  						<b-button-group size="sm" variant="link" v-for="emotion in emotions" :key="emotion.eid">
+	  							<b-button v-on:click="reclassify(emotion.emo)">{{ emotion.emo }}</b-button>
+	  						</b-button-group>
+	  					</b-card>
+	  				</b-col>
+	  			</b-row>
+	  		</b-container>
+	  	</div>
+	  	<div v-if="ok">
+	  		<b-container fluid>
+	  			<b-alert :show="dspCntDwn" dismissible variant="success" @dismissed="dspCntDwn=0" @dismiss-count-down="dspCntDwnChg">
+	  				<div class="text-center">{{ msg }}</div>
+	  			</b-alert>
+	  		</b-container>
+	  	</div>
+	  	<div v-if="nok">
+	  		<b-container fluid>
+	  			<b-alert :show="dspCntDwn" dismissible variant="danger" @dismissed="dspCntDwn=0" @dismiss-count-down="dspCntDwnChg">
+	  				<div class=" text-center">{{ msg }}</div>
+	  			</b-alert>
+	  		</b-container>
+	  	</div>
+  </div>
+	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+	<!-- Required scripts -->
+	<script src="https://unpkg.com/vue@latest/dist/vue.js"></script>
+	<script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+	<script>
+
+		var app = new Vue({
+			el: '#app',
+			data() {
+				return {
+					text: 'I feel bad that I neglected this project for so long',
+					show: true,
+					seen: false,
+					ok: false,
+					nok: false,
+					sentiment : '',
+					msg: '',
+          dspSecs: 5,
+          dspCntDwn: 0,
+					id : 0,
+					emotions: [
+						{ eid: 1, emo: 'fear' },
+						{ eid: 2, emo: 'guilt' },
+						{ eid: 3, emo: 'joy' },
+						{ eid: 4, emo: 'anger' },
+						{ eid: 5, emo: 'disgust' },
+						{ eid: 6, emo: 'sadness' },
+						{ eid: 7, emo: 'shame' }
+					]
+				}
+			},
+			methods: {
+				onSubmit(evt) {
+					/*
+					evt.preventDefault();
+					var review = $.trim($("#review").val());
+					var json = {};
+					json["review"]  = review;
+					console.log(json);
+					$("button").attr("disabled", true);
+					fetch('http://localhost:8080/rest/v1/getSentiment')
+					.then(res => res.json())
+					.then(res => {
+							console.log(res.payload);
+							this.sentiment = res.payload.classification;
+							this.seen = true;
+							this.id = res.payload.id;
+					}, err => console.error(err));
+					*/
+
+
+
+
+					var review = $.trim($("#review").val());
+					var json = {};
+					json["review"]  = review;
+
+					console.log(json);
+
+
+					axios({
+						"method": "POST",
+						"url": "http://localhost:3000/getSentiment",
+						"data": json,
+						"headers": { "content-type": "application/json" }
+					}).then(result => {
+		                    this.res = result.data;
+							console.log(this.res);
+		                    console.log(this.res.classification);
+							this.sentiment = this.res.classification;
+							this.seen = true;
+							this.id = this.res.id;
+
+		                }, error => {
+
+		                    console.error(error);
+		            });
+
+
+					/*
+					$.ajax({
+							url: "http://localhost:8080/rest/v1/getSentiment",
+							type: "POST",
+							data: JSON.stringify(json),
+							contentType: "application/json",
+							success: function(result){
+								console.log(result);
+								this.seen = true;
+								this.sentiment = result.payload.classification;
+								this.id = result.payload.id;
+								$("button").attr("disabled", false);
+							},
+							error: function(xhr){
+								this.seen = true;
+								this.sentiment = xhr.statusText;
+								$("button").attr("disabled", false);
+							}
+					});
+					*/
+				},
+		    reclassify(sentiment) {
+
+		    	var json = {};
+		        	json["id"] = this.id;
+		        	json["sentiment"]  = this.sentiment;
+		        	console.log(json);
+
+					axios({
+						"method": "POST",
+						"url": "http://localhost:8080/rest/v1/setSentiment",
+						"data": json,
+						"headers": { "content-type": "application/json" }
+					}).then(result => {
+		                    this.res = result.data;
+		                    console.log(this.res.payload);
+		                    this.ok = true;
+		                    this.msg = 'Reclassification result succesfully revised.';
+                        this.dspCntDwn = this.dspSecs;
+
+		                }, error => {
+
+		                    console.error(error);
+		                    this.nok = true;
+		                    this.msg = 'Error ... Reclassification result has not been revised.';
+                        this.dspCntDwn = this.dspSecs;
+
+		            });
+
+							/*
+		        	$.ajax({
+		            	url: "http://localhost:8080/rest/v1/setSentiment",
+		            	type: "POST",
+		            	data: JSON.stringify(json),
+		            	contentType: "application/json",
+		            	success: function(result){
+		                	console.log(result);
+
+		            	},
+		        		error: function(xhr){
+		        			//do something
+		        		}
+		        	});
+							*/
+					 },
+					 approve(){
+						 var json = {};
+		        		json["id"] = this.id;
+		        		console.log(json);
+
+						axios({
+							"method": "POST",
+							"url": "http://localhost:8080/rest/v1/approveSentiment",
+							"data": json,
+							"headers": { "content-type": "application/json" }
+						}).then(result => {
+			                    this.res = result.data;
+			                    console.log(this.res.payload);
+			                    this.ok = true;
+			                    this.msg = 'Acceptance successfully approved.';
+                          this.dspCntDwn = this.dspSecs;
+
+			                }, error => {
+
+			                    console.error(error);
+			                    this.nok = true;
+			                    this.msg = 'Error ... Acceptance has not been approved.';
+                          this.dspCntDwn = this.dspSecs;
+			            });
+
+								/*
+		        		$.ajax({
+		            	url: "http://localhost:8080/rest/v1/approveSentiment",
+		            	type: "POST",
+		            	data: JSON.stringify(json),
+		            	contentType: "application/json",
+		            	success: function(result){
+		                	console.log(result);
+		            	},
+		        		error: function(xhr){
+		        		//do something
+		        		}
+		        	 });
+							 */
+						},
+            dspCntDwnChg(dspCntDwn) {
+              this.dspCntDwn = dspCntDwn
+            }
+		 }
+		});
+	</script>
+</body>
+
+</html>
