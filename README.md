@@ -11,9 +11,10 @@ then in ai-automation folder:
 
 
 ```
-npm install serverless
-npm install serverless-offline --save-dev
+npm install serverless --save-dev
+npm install serverless-offline@next --save-dev
 npm install serverless-s3-local --save-dev
+npm install serverless-dynamodb-local --save-dev
 ```
 
 
@@ -35,6 +36,12 @@ Copy the index.html in the local bucket created:
 
 ```
 aws s3 cp index.html s3://local-bucket/index.html --endpoint-url http://localhost:8000
+```
+
+Copy the app.js in the local bucket created:
+
+```
+aws s3 cp app.js s3://local-bucket/app.js --endpoint-url http://localhost:8000
 ```
 
 On another terminal open the folder ai-project and run the docker-compose up to start the flask app
