@@ -31,10 +31,10 @@ var app = new Vue({
       json["review"]  = review;
 
       console.log(json);
-
+      review_save = review;
       axios({
         "method": "POST",
-        "url": "http://localhost:3000/getSentiment",
+        "url": "http://localhost:3000/dev/getSentiment",
         "data": json,
         "headers": { "content-type": "application/json" }
       }).then(result => {
@@ -42,6 +42,7 @@ var app = new Vue({
           console.log(this.res);
                     console.log(this.res.classification);
           this.sentiment = this.res.classification;
+          sentiment_save = this.sentiment;
           this.seen = true;
           this.id = this.res.id;
 
@@ -56,16 +57,16 @@ var app = new Vue({
       var json = {};
           //json["id"] = this.id;
           json["sentiment"]  = this.sentiment;
+          json["review"]  = review_save;
           console.log(json);
-
       axios({
         "method": "POST",
-        "url": "http://localhost:3000/setSentiment",
+        "url": "http://localhost:3000/dev/setSentiment",
         "data": json,
         "headers": { "content-type": "application/json" }
       }).then(result => {
                     this.res = result.data;
-                    console.log(this.res.payload);
+                    console.log(this.res);
                     this.ok = true;
                     this.msg = 'Reclassification result succesfully revised.';
                     this.dspCntDwn = this.dspSecs;
@@ -83,16 +84,18 @@ var app = new Vue({
        approve(){
          var json = {};
             //json["id"] = this.id;
+            
+            json["review"]  = review_save;
+            json["sentiment"]  = sentiment_save;
             console.log(json);
-
         axios({
           "method": "POST",
-          "url": "http://localhost:3000/approveSentiment",
+          "url": "http://localhost:3000/dev/setSentiment",
           "data": json,
           "headers": { "content-type": "application/json" }
         }).then(result => {
                       this.res = result.data;
-                      console.log(this.res.payload);
+                      console.log(this.res);
                       this.ok = true;
                       this.msg = 'Acceptance successfully approved.';
                       this.dspCntDwn = this.dspSecs;
