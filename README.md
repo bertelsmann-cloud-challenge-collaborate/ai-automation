@@ -49,3 +49,19 @@ On another terminal open the folder ai-project and run the docker-compose up to 
 Now you can open a browser:
 http://localhost:8000/local-bucket/index.html
 
+
+For information, with dynamodb-local started, you can go to this URL: http://localhost:8100/shell:
+
+you can paste it to scan the table and see what's inside the DB:
+
+```
+var params = {
+    TableName: 'SentimentReview',
+    
+    ReturnConsumedCapacity: 'NONE', // optional (NONE | TOTAL | INDEXES)
+};
+dynamodb.scan(params, function(err, data) {
+    if (err) ppJson(err); // an error occurred
+    else ppJson(data); // successful response
+});
+```
