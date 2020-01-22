@@ -2,6 +2,18 @@ service: website
 provider:
   name: aws
   runtime: python3
+  environment:
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
 plugins:
   - serverless-offline
   - serverless-s3-local
@@ -45,7 +57,71 @@ resources:
           Uri: http://localhost:5000
           IntegrationResponses:
             - StatusCode: 200
+    ProxyResource2:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId:
+          Fn::GetAtt:
+            - ApiGatewayRestApi
+            - RootResourceId
+        PathPart: approveSentiment
+        RestApiId:
+          Ref: ApiGatewayRestApi
+    ProxyMethod2:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId:
+          Ref: ProxyResource2
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        HttpMethod: POST
+        MethodResponses:
+          - StatusCode: 200
+        Integration:
+          IntegrationHttpMethod: POST
+          Type: HTTP_PROXY
+          Uri: http://localhost:5000
+          IntegrationResponses:
+            - StatusCode: 200
+    ProxyResource3:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId:
+          Fn::GetAtt:
+            - ApiGatewayRestApi
+            - RootResourceId
+        PathPart: setSentiment
+        RestApiId:
+          Ref: ApiGatewayRestApi
+    ProxyMethod3:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId:
+          Ref: ProxyResource3
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        HttpMethod: POST
+        MethodResponses:
+          - StatusCode: 200
+        Integration:
+          IntegrationHttpMethod: POST
+          Type: HTTP_PROXY
+          Uri: http://localhost:5000
+          IntegrationResponses:
+            - StatusCode: 200
 functions:
+  approve:
+    handler: backend.create
+    events:
+      - http:
+        method: PUT
+        cors: true
+  reclassify:
+    handler: backend.create
+    events:
+      - http:
+        method: PUT
+        cors: true
   webhook:
     handler: handler.webhook
     events:
