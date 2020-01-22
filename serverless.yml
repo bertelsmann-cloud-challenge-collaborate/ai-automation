@@ -1,9 +1,14 @@
 service: website
 provider:
   name: aws
-  runtime: python3
+  runtime: python3.6
   environment:
-    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    DYNAMODB_TABLE: SentimentReview
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': apiGateway-restApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': apiGateway-rootResourceId
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -17,21 +22,46 @@ provider:
 plugins:
   - serverless-offline
   - serverless-s3-local
+  - serverless-dynamodb-local
 custom:
   serverless-offline:
     resourceRoutes: true
   s3:
     port: 8000
     directory: .
+  dynamodb:
+    stages:
+      - dev
+    start:
+      port: 8100
+      inMemory: true
+      heapInitial: 200m
+      heapMax: 1g
+      migrate: true
+      seed: true
+      convertEmptyValues: true
 resources:
   Resources:
-    NewResource:
+    Bucket:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: local-bucket
         WebsiteConfiguration:
           IndexDocument: index.html
-    ProxyResource:
+    SentimentTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: SentimentReview
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    GetSentimentResource:
       Type: AWS::ApiGateway::Resource
       Properties:
         ParentId:
@@ -41,63 +71,11 @@ resources:
         PathPart: getSentiment
         RestApiId:
           Ref: ApiGatewayRestApi
-    ProxyMethod:
+    GetSentimentMethod:
       Type: AWS::ApiGateway::Method
       Properties:
         ResourceId:
-          Ref: ProxyResource
-        RestApiId:
-          Ref: ApiGatewayRestApi
-        HttpMethod: POST
-        MethodResponses:
-          - StatusCode: 200
-        Integration:
-          IntegrationHttpMethod: POST
-          Type: HTTP_PROXY
-          Uri: http://localhost:5000
-          IntegrationResponses:
-            - StatusCode: 200
-    ProxyResource2:
-      Type: AWS::ApiGateway::Resource
-      Properties:
-        ParentId:
-          Fn::GetAtt:
-            - ApiGatewayRestApi
-            - RootResourceId
-        PathPart: approveSentiment
-        RestApiId:
-          Ref: ApiGatewayRestApi
-    ProxyMethod2:
-      Type: AWS::ApiGateway::Method
-      Properties:
-        ResourceId:
-          Ref: ProxyResource2
-        RestApiId:
-          Ref: ApiGatewayRestApi
-        HttpMethod: POST
-        MethodResponses:
-          - StatusCode: 200
-        Integration:
-          IntegrationHttpMethod: POST
-          Type: HTTP_PROXY
-          Uri: http://localhost:5000
-          IntegrationResponses:
-            - StatusCode: 200
-    ProxyResource3:
-      Type: AWS::ApiGateway::Resource
-      Properties:
-        ParentId:
-          Fn::GetAtt:
-            - ApiGatewayRestApi
-            - RootResourceId
-        PathPart: setSentiment
-        RestApiId:
-          Ref: ApiGatewayRestApi
-    ProxyMethod3:
-      Type: AWS::ApiGateway::Method
-      Properties:
-        ResourceId:
-          Ref: ProxyResource3
+          Ref: GetSentimentResource
         RestApiId:
           Ref: ApiGatewayRestApi
         HttpMethod: POST
@@ -111,16 +89,9 @@ resources:
             - StatusCode: 200
 functions:
   approve:
-    handler: backend.create
+    handler: backend.handler
     events:
-      - http:
-        method: PUT
-        cors: true
-  reclassify:
-    handler: backend.create
-    events:
-      - http:
-        method: PUT
+      - http: POST /setSentiment
         cors: true
   webhook:
     handler: handler.webhook
