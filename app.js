@@ -56,7 +56,7 @@ var app = new Vue({
 
       var json = {};
           //json["id"] = this.id;
-          json["sentiment"]  = this.sentiment;
+          json["sentiment"]  = sentiment;
           json["review"]  = review_save;
           console.log(json);
       axios({
@@ -84,7 +84,7 @@ var app = new Vue({
        approve(){
          var json = {};
             //json["id"] = this.id;
-            
+
             json["review"]  = review_save;
             json["sentiment"]  = sentiment_save;
             console.log(json);
