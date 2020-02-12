@@ -46,3 +46,23 @@ def handler(event, context):
     }
 
     return response
+
+
+def csvhandler(event, context):
+    
+    table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
+
+    output = "id;review;sentiment;\n"
+
+    items = table.scan()
+
+    for item in items['Items']:
+        output+=(item['id']+";"+item['review']+ ";" + item['classification']+ ";\n") 
+        print(item)
+    
+    
+    return {
+        "statusCode": 200, 
+        "Content-Type": "text/csv; charset=utf-8",
+        "body": output 
+        }   

@@ -34,7 +34,7 @@ custom:
       - dev
     start:
       port: 8100
-      inMemory: true
+      #inMemory: false
       heapInitial: 200m
       heapMax: 1g
       migrate: true
@@ -93,6 +93,11 @@ functions:
     events:
       - http: POST /setSentiment
         cors: true
+  getCsv:
+    handler: backend.csvhandler
+    events:
+      - http: GET /getCsv.csv
+        cors: true      
   webhook:
     handler: handler.webhook
     events:
