@@ -4,21 +4,21 @@ on:
       - feature/serverless
 name: Deploy branch
 jobs:
-  deploy:
-    name: deploy
+  deploy-dev:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - name: npm install
-      uses: actions/npm@master
+    - uses: actions/checkout@v1
+    - uses: actions/setup-node@v1
       with:
-        args: install
-    - name: serverless deploy
-      uses: serverless/github-action@master
-      with:
-        args: deploy --stage prod
-      env:
-        #SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
-        # or if using AWS creds directly
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        node-version: '12.x'
+    - name: Install Serverless Framework
+      run: npm install -g serverless
+    - name: Serverless AWS authentication
+      run: sls config credentials --provider aws --key ${{ secrets.AWS_ACCESS_KEY }} --secret ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    - name: Install NPM dependencies
+      run: npm install
+    # Optional
+    #- name: Build assets
+    #  run: npm run assets-dev
+    - name: Deploy Lambda functions
+      run: sls deploy -s prod
