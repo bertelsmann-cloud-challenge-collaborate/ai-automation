@@ -1,8 +1,9 @@
 on:
   push:
     branches:
-      - feature/serverless
-name: Deploy branch
+      - master
+
+name: Serverless deployment
 jobs:
   deploy-dev:
     runs-on: ubuntu-latest
@@ -17,8 +18,5 @@ jobs:
       run: sls config credentials --provider aws --key ${{ secrets.AWS_ACCESS_KEY }} --secret ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     - name: Install NPM dependencies
       run: npm install
-    # Optional
-    #- name: Build assets
-    #  run: npm run assets-dev
     - name: Deploy Lambda functions
       run: sls deploy -s prod
