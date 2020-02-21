@@ -2,13 +2,14 @@ service: website
 provider:
   name: aws
   runtime: python3.6
+  region: us-west-2
   environment:
     DYNAMODB_TABLE: SentimentReview
-  apiGateway:
-    restApiId:
-      'Fn::ImportValue': apiGateway-restApiId
-    restApiRootResourceId:
-      'Fn::ImportValue': apiGateway-rootResourceId
+  # apiGateway:
+  #   restApiId:
+  #     'Fn::ImportValue': apiGateway-restApiId
+  #   restApiRootResourceId:
+  #     'Fn::ImportValue': apiGateway-rootResourceId
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -45,9 +46,13 @@ resources:
     Bucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: local-bucket
+        BucketName: ai-frontend
         WebsiteConfiguration:
           IndexDocument: index.html
+    BucketBackend:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ai-backend-udacity
     SentimentTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -74,6 +79,7 @@ resources:
     GetSentimentMethod:
       Type: AWS::ApiGateway::Method
       Properties:
+        AuthorizationType: NONE
         ResourceId:
           Ref: GetSentimentResource
         RestApiId:
@@ -81,30 +87,62 @@ resources:
         HttpMethod: POST
         MethodResponses:
           - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: true
+              method.response.header.Access-Control-Allow-Methods: true
+              method.response.header.Access-Control-Allow-Origin: true
         Integration:
           IntegrationHttpMethod: POST
           Type: HTTP_PROXY
-          Uri: http://localhost:5000
+          Uri: http://34.220.74.75:5000
           IntegrationResponses:
             - StatusCode: 200
+              ResponseParameters:
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+    GetSentimentOptionMethod:
+      Type: "AWS::ApiGateway::Method"
+      Properties:
+        ResourceId:
+          Ref: GetSentimentResource
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        AuthorizationType: NONE
+        HttpMethod: OPTIONS
+        Integration:
+          Type: MOCK
+          IntegrationResponses:
+            - ResponseParameters:
+                method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+                method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+                method.response.header.Access-Control-Allow-Origin: "'*'"
+              ResponseTemplates:
+                application/json: ''
+              StatusCode: '200'
+          PassthroughBehavior: NEVER
+          RequestTemplates:
+            application/json: '{"statusCode": 200}'
+        MethodResponses:
+          - ResponseModels:
+              application/json: Empty
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: true
+              method.response.header.Access-Control-Allow-Methods: true
+              method.response.header.Access-Control-Allow-Origin: true
+            StatusCode: '200'
 functions:
   approve:
     handler: backend.handler
     events:
-      - http: POST /setSentiment
-        cors: true
+      - http:
+          method: POST
+          path: setSentiment
+          cors: true
   getCsv:
-    handler: backend.csvhandler
-    events:
-      - http: GET /getCsv.csv
-        cors: true      
-  webhook:
-    handler: handler.webhook
+    handler: getcsv.handler
     events:
       - http:
-        method: GET
-  s3hook:
-    handler: handler.s3hook
-    events:
-      - s3: local-bucket
-        event: s3:*
+          method: GET
+          path: getcsv
+          cors: true
