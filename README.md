@@ -3,7 +3,7 @@
 #### _The project was created by 3 scholars from the Cloud Track Challenge_
 
 * [Adrik S](https://github.com/Adriks976) (France)
-* [Audrey ST](https://github.com/atan4583) (Australia/USA)
+* [Audrey ST](https://github.com/atan4583) (Australia)
 * [Christopher R](https://github.com/christopherrauh) (Germany)
 
 ### Repo Information
